@@ -29,9 +29,6 @@ class TextWrapper {
         this.root = document.createTextNode(content);
     }
     [RENDER_TO_DOM](range){
-        this.render()[RENDER_TO_DOM](range);
-    }
-    [RENDER_TO_DOM](range){
         range.deleteContents();
         range.insertNode(this.root);
     }
@@ -57,6 +54,25 @@ export class Component {
     rerender() {
         this._range.deleteContents();
         this[RENDER_TO_DOM](this._range);
+    }
+    setSate(newState) {
+        if (this.state === null || typeof this.state !== "object") {
+            this.state = newState;
+            this.rerender();
+            return;
+        }
+        let merge = (oldState, newState) => {
+            for (let p in newState) {
+                if(oldState[p] === null || typeof oldState[p] !== "object") {
+                    oldState[p] = newState[p];
+                } else {
+                    merge(oldState[p], newState[p]);
+                }
+            }
+
+        }
+        merge(this.setSatet, newState);
+        this.rerender();
     }
 }
 
