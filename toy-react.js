@@ -9,7 +9,11 @@ class ElementWrapper {
             //大小写敏感事件若采用驼峰命名则单独处理
             this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/, c => c.toLowerCase()), value);
         } else {
-            this.root.setAttribute(name, value);
+            if(name == "className") {
+                this.root.setAttribute("class", value);
+            } else {
+                this.root.setAttribute(name, value);
+            }
         }
     }
     appendChild(component) {
@@ -52,10 +56,17 @@ export class Component {
         this.render()[RENDER_TO_DOM](range);
     }
     rerender() {
-        this._range.deleteContents();
-        this[RENDER_TO_DOM](this._range);
+        //保存老的range，避免调用RENDER_TO_DOM方法插入后修改了this._range
+        let oldRange = this._range;
+        let range = document.createRange();
+        range.setStart(this._range.startContainer, this._range.startOffset);
+        range.setEnd(this._range.startContainer, this._range.startOffset);
+        this[RENDER_TO_DOM](range);
+        //将老的range挪到插入之后
+        oldRange.setStart(range.endContainer, range.endOffset);
+        oldRange.deleteContents();
     }
-    setSate(newState) {
+    setState(newState) {
         if (this.state === null || typeof this.state !== "object") {
             this.state = newState;
             this.rerender();
@@ -63,6 +74,7 @@ export class Component {
         }
         let merge = (oldState, newState) => {
             for (let p in newState) {
+                //js著名的坑，因为null的typeof也是object类型的
                 if(oldState[p] === null || typeof oldState[p] !== "object") {
                     oldState[p] = newState[p];
                 } else {
@@ -71,7 +83,7 @@ export class Component {
             }
 
         }
-        merge(this.setSatet, newState);
+        merge(this.state, newState);
         this.rerender();
     }
 }
@@ -91,6 +103,9 @@ export function createElement(type, attributes, ...children) {
         for (let child of children) {
             if(typeof child === "string") {
                 child = new TextWrapper(child)
+            }
+            if(child === null) {
+                continue;
             }
             if(typeof child == "object" && (child instanceof Array)) {
                 insertChildren(child);
